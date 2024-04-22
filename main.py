@@ -1,12 +1,19 @@
 from fastapi import FastAPI, status, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 import pandas as pd
 import joblib
+
+# Load the model
+model = joblib.load("model/logistic_regression_model_v01.pkl")
 
 app = FastAPI(
     title= "Deploy breast cancer model",
     version= "0.1.0"
 )
+
+class Item(BaseModel):
+    data: list
 
 @app.get("/")
 async def home():
@@ -20,15 +27,10 @@ async def breast_cancer():
 async def predict_breast_cancer():
     return {"message": "Predict breast cancer"}
 
-@app.get("/api/v1/predict-breast-cancer", tags=["breast-cancer"])
-async def predict_breast_cancer():
-    return {"message": "Predict breast cancer"}
-
 @app.post("/api/v1/predict", tags=["predictions"])
-async def predict():
-    dictionary = {"data": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+async def predict(item: Item):
     try:
-        df = pd.DataFrame(dictionary)
+        df = pd.DataFrame([item.data], columns=[f'feature_{i}' for i in range(len(item.data))])
         prediction= model.predict(df)
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -39,21 +41,11 @@ async def predict():
             status_code=400,
             detail=str(e)
         )
-# Load the model
-
-from fastapi import HTTPException
-from fastapi.responses import JSONResponse
-from fastapi import status
-import pandas as pd
-import joblib
-
-model = joblib.load("logistic_regression_model_v01.pkl")
 
 @app.post("/api/v1/predict-breast-cancer", tags=["breast-cancer"])
-async def predict(data: dict):
-    dictionary = {"data": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+async def predict_breast_cancer(item: Item):
     try:
-        df = pd.DataFrame(dictionary)
+        df = pd.DataFrame([item.data], columns=[f'feature_{i}' for i in range(len(item.data))])
         prediction= model.predict(df)
         return JSONResponse(
             status_code=status.HTTP_200_OK,
